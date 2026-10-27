@@ -1,0 +1,23 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: lograg
+          POSTGRES_PASSWORD: lograg
+          POSTGRES_DB: lograg
+        ports: ["5442:5432"]
+        options: >-
+          --health-cmd "pg_isready -U lograg" --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e '.[dev]'
+      # Tests use a deterministic embedder and a stub LLM: real pgvector, no Ollama needed in CI.
+      - run: pytest -q
