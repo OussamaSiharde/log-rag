@@ -1,0 +1,7 @@
+2026-10-20T09:01:00.000Z INFO  [deployer] Cluster prod-eu-1 healthy, 14 deployments up to date
+2026-10-20T12:03:00.000Z INFO  [deployer] Starting rollout payments v2.14.0 (commit 9f3c2e1: raise provider read timeout to 30s, new stripe-eu client)
+2026-10-20T12:04:00.000Z INFO  [deployer] Rollout complete: payments v2.14.0, 3/3 pods ready
+2026-10-20T12:50:00.000Z INFO  [deployer] Starting rollback payments v2.14.0 -> v2.13.2 (requested by on-call)
+2026-10-20T12:51:00.000Z INFO  [deployer] Rollback complete: payments v2.13.2, 3/3 pods ready
+2026-10-20T14:19:00.000Z INFO  [deployer] Starting rollout inventory v5.3.1 (commit 1b77ad0: stock cache TTL 60s)
+2026-10-20T14:20:00.000Z INFO  [deployer] Rollout complete: inventory v5.3.1, 4/4 pods ready
