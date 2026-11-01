@@ -1,28 +1,73 @@
 # log-RAG
 
-**Ask questions about your logs in plain English, fully offline.**
+![CI](https://github.com/OussamaSiharde/log-rag/actions/workflows/ci.yml/badge.svg)
+
+During an incident you rarely know what to grep for. log-RAG lets you ask in plain
+language, then answers from your logs and cites the lines it used. Everything runs
+locally, so production logs never leave the machine.
 
 ![lograg ask, excerpt of a real run](docs/demo.svg)
 
-log-RAG parses application logs, chunks them per service and time window, embeds
-them with a local model, stores the vectors in PostgreSQL/pgvector, and answers
-questions with a local LLM that must cite the log excerpts it used.
+## The problem
 
-Nothing leaves the machine: no API keys, no data processing agreement, no
-redaction pipeline. For an internal tool that reads production logs, that is
-usually the whole argument.
+Sending production logs to a hosted LLM usually means a data processing agreement and
+a redaction step, and sometimes it isn't allowed at all. A plain vector search has a
+different weakness: it finds lines that look like the question, but the *cause* of an
+incident is often in another service's logs, minutes earlier, using different words.
 
-![log-RAG pipeline](docs/architecture.svg)
+log-RAG handles both. It runs entirely offline, and after retrieving matches it finds
+when the problem started and pulls in what other services were doing at that moment.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Ingest
+        Logs[Log files] --> Parse[Parse] --> Chunk[Chunk by service<br/>and time window]
+        Chunk --> Embed[Embed<br/>nomic-embed-text]
+    end
+    Embed --> DB[(PostgreSQL<br/>pgvector HNSW)]
+    subgraph Ask
+        Q[Question] --> Search[Cosine search<br/>plus SQL filters]
+        Search --> Onset[Find the onset]
+        Onset --> Context[Add other services<br/>30 min before to 5 after]
+        Context --> LLM[Local LLM<br/>must cite excerpts]
+    end
+    DB --> Search
+    LLM --> Answer[Answer with sources]
+```
+
+Why the context step exists:
+
+```mermaid
+sequenceDiagram
+    participant D as deployer
+    participant P as payments
+    participant G as gateway
+    Note over D: 12:03 rollout v2.14.0
+    Note over P: 12:07 first timeout
+    Note over G: 12:07 504 on checkout
+    Note over P: Search finds errors like these
+    P-->>D: Onset at 12:07, so look back 30 minutes
+    Note over D: The rollout enters the prompt
+```
+
+## Design decisions
+
+| Decision | Why | Trade-off |
+|---|---|---|
+| pgvector instead of a vector database | Search combines with ordinary `WHERE` filters, and teams already run PostgreSQL | Less tuning than a dedicated engine |
+| Local models through Ollama | No data leaves the machine, no API keys | Slow on CPU: about 10 minutes per answer here |
+| Strict chunking rules | Retrieval depends more on chunking than on model size | Two log formats out of the box |
+| Errors stay with their stack traces | A split trace loses its meaning | Chunks vary in size |
+| Repeats collapse into `(repeated xN)` | A log storm cannot drown everything else | Exact repeat timing is lost |
+| Lopsided time window | Causes come before symptoms | Unrelated deploys can enter the prompt |
+| Content hash on each chunk | Re-ingesting only embeds what is new | None worth mentioning |
 
 ## Stack
 
-| Piece        | Choice                                     |
-|--------------|--------------------------------------------|
-| Embeddings   | `nomic-embed-text` (768 dims) via Ollama   |
-| Answers      | `qwen2.5:7b` via Ollama (any chat model works) |
-| Vector store | PostgreSQL 16 + pgvector, HNSW cosine index |
-| Retrieval    | a SQL `ORDER BY embedding <=> query`       |
-| Code         | Python 3.11, two dependencies (`psycopg`, `httpx`) |
+Python 3.11, PostgreSQL 16 with pgvector, Ollama (`nomic-embed-text`, `qwen2.5:7b`),
+Docker Compose, GitHub Actions. Two runtime dependencies: `psycopg` and `httpx`.
 
 ## Quick start
 
@@ -40,58 +85,6 @@ python3 -m venv .venv && .venv/bin/pip install '.[dev]'
 Other commands: `lograg search` (retrieval only, no LLM), `lograg stats`,
 `lograg reset`. Filters: `--service`, `--since`, `--until`, `--level ERROR`, `-k`.
 Settings come from `LOGRAG_DSN`, `OLLAMA_URL`, `LOGRAG_EMBED_MODEL`, `LOGRAG_CHAT_MODEL`.
-
-## How it works
-
-1. **Parse.** ISO-style lines and Spring Boot's default console format. Stack
-   traces and other continuation lines stay attached to the record that
-   produced them.
-2. **Chunk.** Retrieval quality depends far more on chunking than on model
-   size, so the rules are strict: one service per chunk, bounded time window
-   (5 min / 25 records / ~1,800 chars), an error never separated from its
-   stack trace, and consecutive repeats collapsed into `(repeated xN)` so a log
-   storm cannot drown everything else.
-3. **Embed.** Each chunk gets a small metadata header (service, levels, time)
-   and nomic's `search_document:` / `search_query:` task prefixes.
-4. **Retrieve.** Cosine distance in SQL, combinable with ordinary `WHERE`
-   filters on service, time and level.
-5. **Explain *when*.** The best match is often not the first occurrence, so
-   log-RAG looks for the **onset**: the earliest chunk of that service that
-   still matches closely (and, if the match contains errors, that contains
-   errors too — healthy traffic sharing the same words is not an onset). It
-   then adds chunks from *other* services from 30 minutes before to 5 minutes
-   after that moment, ranking deploys, rollbacks and config changes first.
-   The window is lopsided on purpose: causes come before symptoms, and a bad
-   release often surfaces 10–30 minutes after it lands.
-6. **Answer.** The LLM sees numbered excerpts, must cite them like `[2]`, and
-   is told to say so when the logs do not contain the answer.
-
-Re-ingesting a file is a no-op: every chunk has a content hash, and only new
-chunks are embedded.
-
-## Example run
-
-Real output from `qwen2.5:7b` on the synthetic logs below, unedited:
-
-```
-$ lograg ask "When did the payment failures start, and what was deployed around then?"
-Retrieved 9 excerpts in 124 ms; asking qwen2.5:7b...
-
-The payment failures started at 2026-10-20 12:07:10 UTC [7], shortly after the
-deployment of payments v2.14.0.
-
-Key points:
-- Deployment of payments v2.14.0 occurred between 12:03:00 and 12:04:00 UTC on 2026-10-20 [1].
-- Payment failures began at 12:07:10, which is about 4 minutes after the deployment started.
-- The logs show multiple payment failures with Stripe EU provider starting from this timestamp.
-
-retrieval: 124 ms, total: 622.1s (qwen2.5:7b)
-```
-
-It finds the right release and the right order of events, but the timestamp is
-slightly off: 12:07:10 is where the cited chunk begins, and the first error in
-that chunk is at 12:07:28. Check the cited excerpts before trusting a precise
-time. The 10 minutes are CPU-only generation; retrieval takes about 0.1 s.
 
 ## Evaluation
 
@@ -115,6 +108,21 @@ in the prompt, so the model can connect cause and effect.
 Measured on an Intel i9 laptop, CPU only, Ollama in Docker: ingesting the
 12,632 records (553 chunks) took about 23 minutes, almost all of it embedding.
 A GPU makes this dramatically faster.
+
+## Example run
+
+Real output, unedited apart from the excerpts:
+
+```
+The payment failures started at 2026-10-20 12:07:10 UTC [7], shortly after the
+deployment of payments v2.14.0.
+
+retrieval: 124 ms, total: 622.1s (qwen2.5:7b)
+```
+
+It found the right release and the right order of events, but the time is slightly
+off: 12:07:10 is where the cited chunk begins, and the first error is at 12:07:28.
+Check the cited lines before trusting an exact time.
 
 ## Tests
 
