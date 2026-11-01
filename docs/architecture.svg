@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="217" viewBox="0 0 860 217" role="img" aria-label="log-RAG pipeline">
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#8b949e"/></marker></defs>
+<rect width="860" height="217" rx="10" fill="#0d1117"/>
+<text x="20" y="34" fill="#e6edf3" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="17" font-weight="600">log-RAG pipeline</text>
+<rect x="20.0" y="54" width="143.2" height="119" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="1.5"/>
+<text x="91.6" y="82" fill="#58a6ff" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="14.5" font-weight="600" text-anchor="middle">Parse</text>
+<text x="91.6" y="108" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">ISO + Spring Boot</text>
+<text x="91.6" y="127" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">stack traces stay</text>
+<text x="91.6" y="146" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">with their record</text>
+<line x1="165.2" y1="113.5" x2="185.2" y2="113.5" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="189.2" y="54" width="143.2" height="119" rx="8" fill="#161b22" stroke="#39c5cf" stroke-width="1.5"/>
+<text x="260.79999999999995" y="82" fill="#39c5cf" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="14.5" font-weight="600" text-anchor="middle">Chunk</text>
+<text x="260.79999999999995" y="108" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">per service</text>
+<text x="260.79999999999995" y="127" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">5 min / 25 records</text>
+<text x="260.79999999999995" y="146" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">repeats collapsed</text>
+<line x1="334.4" y1="113.5" x2="354.4" y2="113.5" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="358.4" y="54" width="143.2" height="119" rx="8" fill="#161b22" stroke="#bc8cff" stroke-width="1.5"/>
+<text x="430.0" y="82" fill="#bc8cff" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="14.5" font-weight="600" text-anchor="middle">Embed</text>
+<text x="430.0" y="108" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">nomic-embed-text</text>
+<text x="430.0" y="127" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">768 dims, Ollama</text>
+<text x="430.0" y="146" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">content hash dedupe</text>
+<line x1="503.59999999999997" y1="113.5" x2="523.5999999999999" y2="113.5" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="527.5999999999999" y="54" width="143.2" height="119" rx="8" fill="#161b22" stroke="#d29922" stroke-width="1.5"/>
+<text x="599.1999999999999" y="82" fill="#d29922" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="14.5" font-weight="600" text-anchor="middle">Retrieve</text>
+<text x="599.1999999999999" y="108" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">pgvector HNSW</text>
+<text x="599.1999999999999" y="127" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">SQL filters</text>
+<text x="599.1999999999999" y="146" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">onset + deploys</text>
+<line x1="672.8" y1="113.5" x2="692.8" y2="113.5" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="696.8" y="54" width="143.2" height="119" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="1.5"/>
+<text x="768.4" y="82" fill="#3fb950" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="14.5" font-weight="600" text-anchor="middle">Answer</text>
+<text x="768.4" y="108" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">Qwen 2.5 7B</text>
+<text x="768.4" y="127" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">cites excerpts</text>
+<text x="768.4" y="146" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" text-anchor="middle">says when unknown</text>
+<text x="20" y="197" fill="#8b949e" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12.5">Everything runs locally: no API keys, and no log line leaves the machine.</text>
+</svg>
